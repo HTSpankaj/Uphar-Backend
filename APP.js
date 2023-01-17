@@ -142,8 +142,17 @@ app.post("/teacherLogin", async (req, res) => {
     email: post.email,
     password: post.password,
   });
-  console.log(data);
-  res.send(data);
+
+  if (data.user) {
+    const getTeacherResponse = await supabase
+      .from("teacher")
+      .select("*")
+      .eq("teacher_id", data.user.id)
+      .maybeSingle();
+    res.send(getTeacherResponse);
+  } else {
+    res.send({ user: null });
+  }
 });
 //7
 app.post("/updateTeacher", async (req, res) => {
@@ -178,33 +187,32 @@ app.get("/getTeacherListPagination", async (req, res) => {
 });
 //  10 student login
 
-app.post("/registerationStudent", async (req, res) => {
-  const pre = req.body;
-  console.log(pre);
-  //res.send(pre)
-  // let t="";
-  const { data, error } = await supabase.auth.admin.createUser({
-    email: pre.email,
-    password: pre.password,
+app.post("/registrationStudent", async (req, res) => {
+  const post = req.body;
+  console.log(req.body);
+
+  const createUserResponse = await supabase.auth.admin.createUser({
+    email: post.email,
+    password: post.password,
     email_confirm: true,
   });
-
-  console.log(data);
-  //res.send({ data ,error} )// email id already registered
-  let err = "";
-  try {
-    const { insertData, errorData } = await supabase
+  if (createUserResponse.data.user) {
+    const insertData = await supabase
       .from("student")
-
-      .insert([
-        { student_id: data.user.id, email: data.user.email },
-        // { some_column: 'otherValue' },
-      ]);
-  } catch (errorData) {
-    err = errorData.toString();
-    console.log(err);
+      .insert({
+        student_id: createUserResponse.data.user.id,
+        email: createUserResponse.data.user.email,
+        created_at: createUserResponse.data.user.created_at,
+        updated_at: createUserResponse.data.user.updated_at,
+      })
+      .select("*")
+      .maybeSingle();
+    //  console.log(created_at)
+    res.send(insertData);
+    // please tell this one
+  } else {
+    res.send({ error: createUserResponse.error });
   }
-  res.send({ data, error, err });
 });
 // 9
 app.post("/studentLogin", async (req, res) => {
@@ -213,24 +221,38 @@ app.post("/studentLogin", async (req, res) => {
     email: post.email,
     password: post.password,
   });
-  console.log(data);
-  res.send({ data, error });
+
+  if (data.user) {
+    const getTeacherResponse = await supabase
+      .from("student")
+      .select("*")
+      .eq("student_id", data.user.id)
+      .maybeSingle();
+    res.send(getTeacherResponse);
+  } else {
+    res.send({ user: null });
+  }
 });
 //11
 app.post("/updateStudent", async (req, res) => {
   const d = req.body;
-  const updatedata = await supabase
-    .from("student")
-    .update({ first_name: d.first_name, last_name: d.last_name })
-    .eq("student_id", d.student_id);
+  let postData = { ...d };
+  delete postData.teacher_id;
 
-  //console.log(updatedata)
-  res.send(updatedata);
+  console.log(postData);
+
+  const update = await supabase
+    .from("student")
+    .update(postData)
+    .select("*")
+    .maybeSingle()
+    .eq("student_id", d.teacher_id);
+
+  res.send(update);
 });
 // ?
-app.get("/getStudent", async (req, res) => {
+app.get("/getStudents", async (req, res) => {
   let { data, error } = await supabase.from("student").select("*");
-
   res.send(data);
   console.log(data);
 });
@@ -431,12 +453,12 @@ app.post("/addCourseAndSubjectToTeacher", async (req, res) => {
 app.post("/UpdateCourseAndSubjectToTeacherById", async (req, res) => {
   const po = req.body;
   let postData = { ...req.body };
-  delete postData['teacher-subject_id'];
+  delete postData["teacher-subject_id"];
 
   const insertDat = await supabase
     .from("teacher-subject")
     .update(po)
-    .eq("teacher-subject_id", po['teacher-subject_id'])
+    .eq("teacher-subject_id", po["teacher-subject_id"])
     .select("*")
     .maybeSingle();
 
@@ -683,6 +705,16 @@ app.get("/dashboardApiForAnalytics", async (req, res) => {
 
   res.send({ adminCount, teacherCount, studentCount });
 });
+app.get("/dashboardApiForTeacherAnalytics", async (req, res) => {
+  //const post=req.body
+
+  const { count: scheduleCount } = await supabase.from("schedule").select("*", { count: "exact" }).eq("teacher_id", req.query.teacher_id);
+
+  const { count: subscribedStudentCount } = await supabase.from("subscription-teacher-user").select("*", { count: "exact" }).eq("teacher_id", req.query.teacher_id);
+
+
+  res.send({ scheduleCount, subscribedStudentCount });
+});
 //29 30
 app.get("/getAdminById", async (req, res) => {
   const data = await supabase
@@ -696,7 +728,7 @@ app.get("/getAdminById", async (req, res) => {
 app.get("/getTeacherById", async (req, res) => {
   const data = await supabase
     .from("teacher")
-    .select("*,teacher-subject!left(*)")
+    .select("*,teacher-subject!left(*, subject_id(*, course_id(*)))")
     .eq("teacher_id", req.query.teacher_id)
     .maybeSingle();
   res.send(data);
@@ -718,6 +750,40 @@ app.get("/getAllCourseWithSubject", async (req, res) => {
   //  .in('course_id',t)
   //  res.send(tun)
 });
+
+app.get("/getAllScheduleByTeacherId", async (req, res) => {
+  const data = await supabase
+    .from("schedule")
+    .select("*")
+    .eq("teacher_id", req.query.teacher_id);
+  res.send(data);
+});
+
+app.post("/addSchedule", async (req, res) => {
+  const insertData = await supabase
+    .from("schedule")
+    .insert(req.body)
+    .select("*")
+    .maybeSingle();
+  res.send(insertData);
+});
+
+app.post("/studentSubscribeToPlan", async (req, res) => {
+  const { teacher_id, student_id, subscription_plan_id, razorpay_payment_id } = req.body;
+  console.log({ teacher_id, student_id, subscription_plan_id, razorpay_payment_id });
+  if (teacher_id && student_id && subscription_plan_id && razorpay_payment_id) {
+    const insertData = await supabase.from("subscription-teacher-user").insert(req.body).select("*").maybeSingle();
+    res.send(insertData);
+  } else {
+    res.send({error: "body parameters incorrect."})
+  }
+});
+app.get("/getTeacherSubscribersStudentByTeacherId", async (req, res) => {
+  const data = await supabase.from("subscription-teacher-user").select("*, subscription_plan_id(*), student_id(*)").eq("teacher_id", req.query.teacher_id);
+  res.send(data);
+});
+
+
 
 const port = 8080;
 app.listen(port, () => console.log(`connecting to  ${port}`));
