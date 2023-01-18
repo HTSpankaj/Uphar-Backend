@@ -708,10 +708,15 @@ app.get("/dashboardApiForAnalytics", async (req, res) => {
 app.get("/dashboardApiForTeacherAnalytics", async (req, res) => {
   //const post=req.body
 
-  const { count: scheduleCount } = await supabase.from("schedule").select("*", { count: "exact" }).eq("teacher_id", req.query.teacher_id);
+  const { count: scheduleCount } = await supabase
+    .from("schedule")
+    .select("*", { count: "exact" })
+    .eq("teacher_id", req.query.teacher_id);
 
-  const { count: subscribedStudentCount } = await supabase.from("subscription-teacher-user").select("*", { count: "exact" }).eq("teacher_id", req.query.teacher_id);
-
+  const { count: subscribedStudentCount } = await supabase
+    .from("subscription-teacher-user")
+    .select("*", { count: "exact" })
+    .eq("teacher_id", req.query.teacher_id);
 
   res.send({ scheduleCount, subscribedStudentCount });
 });
@@ -758,6 +763,10 @@ app.get("/getAllScheduleByTeacherId", async (req, res) => {
     .eq("teacher_id", req.query.teacher_id);
   res.send(data);
 });
+app.get("/getAllTeacherSchedules", async (req, res) => {
+  const data = await supabase.from("schedule").select("*");
+  res.send(data);
+});
 
 app.post("/addSchedule", async (req, res) => {
   const insertData = await supabase
@@ -769,21 +778,77 @@ app.post("/addSchedule", async (req, res) => {
 });
 
 app.post("/studentSubscribeToPlan", async (req, res) => {
-  const { teacher_id, student_id, subscription_plan_id, razorpay_payment_id } = req.body;
-  console.log({ teacher_id, student_id, subscription_plan_id, razorpay_payment_id });
-  if (teacher_id && student_id && subscription_plan_id && razorpay_payment_id) {
-    const insertData = await supabase.from("subscription-teacher-user").insert(req.body).select("*").maybeSingle();
+  const {
+    teacher_id,
+    student_id,
+    subscription_plan_id,
+    razorpay_payment_id,
+    total_price,
+  } = req.body;
+  console.log({
+    teacher_id,
+    student_id,
+    subscription_plan_id,
+    razorpay_payment_id,
+    total_price,
+  });
+  if (
+    teacher_id &&
+    student_id &&
+    subscription_plan_id &&
+    razorpay_payment_id &&
+    total_price
+  ) {
+    const insertData = await supabase
+      .from("subscription-teacher-user")
+      .insert(req.body)
+      .select("*")
+      .maybeSingle();
     res.send(insertData);
   } else {
-    res.send({error: "body parameters incorrect."})
+    res.send({ error: "body parameters incorrect." });
   }
 });
 app.get("/getTeacherSubscribersStudentByTeacherId", async (req, res) => {
-  const data = await supabase.from("subscription-teacher-user").select("*, subscription_plan_id(*), student_id(*)").eq("teacher_id", req.query.teacher_id);
+  const data = await supabase
+    .from("subscription-teacher-user")
+    .select("*, subscription_plan_id(*), student_id(*), teacher_id(*), schedule_id(*)")
+    .eq("teacher_id", req.query.teacher_id);
+  res.send(data);
+});
+app.get("/getAllTeacherSubscribersStudent", async (req, res) => {
+  const data = await supabase
+    .from("subscription-teacher-user")
+    .select("*, subscription_plan_id(*), student_id(*), teacher_id(*), schedule_id(*)");
+  res.send(data);
+});
+app.get("/getAllSubscriptions", async (req, res) => {
+  const data = await supabase.from("subscription-plan").select("*");
   res.send(data);
 });
 
+app.post("/addSubscriptionPlan", async (req, res) => {
+  const insertData = await supabase
+    .from("subscription-plan")
+    .insert(req.body)
+    .select("*")
+    .maybeSingle();
+  res.send(insertData);
+});
+app.post("/updateSubscriptionPlanById", async (req, res) => {
+  const d = req.body;
+  let postData = { ...d };
+  delete postData.subscription_plan_id;
 
+  const update = await supabase
+    .from("subscription-plan")
+    .update(postData)
+    .select("*")
+    .maybeSingle()
+    .eq("subscription_plan_id", d.subscription_plan_id);
+
+  res.send(update);
+});
 
 const port = 8080;
 app.listen(port, () => console.log(`connecting to  ${port}`));
