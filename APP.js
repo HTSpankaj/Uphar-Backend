@@ -812,14 +812,18 @@ app.post("/studentSubscribeToPlan", async (req, res) => {
 app.get("/getTeacherSubscribersStudentByTeacherId", async (req, res) => {
   const data = await supabase
     .from("subscription-teacher-user")
-    .select("*, subscription_plan_id(*), student_id(*), teacher_id(*), schedule_id(*)")
+    .select(
+      "*, subscription_plan_id(*), student_id(*), teacher_id(*), schedule_id(*)"
+    )
     .eq("teacher_id", req.query.teacher_id);
   res.send(data);
 });
 app.get("/getAllTeacherSubscribersStudent", async (req, res) => {
   const data = await supabase
     .from("subscription-teacher-user")
-    .select("*, subscription_plan_id(*), student_id(*), teacher_id(*), schedule_id(*)");
+    .select(
+      "*, subscription_plan_id(*), student_id(*), teacher_id(*), schedule_id(*)"
+    );
   res.send(data);
 });
 app.get("/getAllSubscriptions", async (req, res) => {
@@ -848,6 +852,40 @@ app.post("/updateSubscriptionPlanById", async (req, res) => {
     .eq("subscription_plan_id", d.subscription_plan_id);
 
   res.send(update);
+});
+
+app.get("/getAllOrdersByTeacherId", async (req, res) => {
+  const data = await supabase
+    .from("order")
+    .select("*, student_id(*)")
+    .eq("teacher_id", req.query.teacher_id)
+    .order("date", { ascending: true });
+  res.send(data);
+});
+
+app.get("/getAllOrders", async (req, res) => {
+  const data = await supabase
+    .from("order")
+    .select("*, student_id(*), teacher_id(*)")
+    .order("date", { ascending: true });
+  res.send(data);
+});
+
+app.get("/getAllTodayOrdersByTeacherId", async (req, res) => {
+  const data = await supabase
+    .from("order")
+    .select("*, student_id(*)")
+    .eq("teacher_id", req.query.teacher_id).eq("date", new Date().toISOString())
+    .order("date", { ascending: true });
+  res.send(data);
+});
+app.get("/getAllTodayOrders", async (req, res) => {
+  const data = await supabase
+    .from("order")
+    .select("*, student_id(*), teacher_id(*)")
+    .eq("date", new Date().toISOString())
+    .order("date", { ascending: true });
+  res.send(data);
 });
 
 const port = 8080;
