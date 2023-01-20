@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const { v4: uuidv4 } = require('uuid');
 
 const { createClient } = require("@supabase/supabase-js");
 const { notEqual } = require("assert"); // why this
@@ -859,7 +860,7 @@ app.get("/getAllOrdersByTeacherId", async (req, res) => {
     .from("order")
     .select("*, student_id(*)")
     .eq("teacher_id", req.query.teacher_id)
-    .order("date", { ascending: true });
+    .order("start_date", { ascending: true });
   res.send(data);
 });
 
@@ -867,7 +868,7 @@ app.get("/getAllOrders", async (req, res) => {
   const data = await supabase
     .from("order")
     .select("*, student_id(*), teacher_id(*)")
-    .order("date", { ascending: true });
+    .order("start_date", { ascending: true });
   res.send(data);
 });
 
@@ -875,18 +876,63 @@ app.get("/getAllTodayOrdersByTeacherId", async (req, res) => {
   const data = await supabase
     .from("order")
     .select("*, student_id(*)")
-    .eq("teacher_id", req.query.teacher_id).eq("date", new Date().toISOString())
-    .order("date", { ascending: true });
+    .eq("teacher_id", req.query.teacher_id).gte("start_date", new Date().toISOString()).lte("end_date", new Date().toISOString())
+    .order("start_date", { ascending: true });
   res.send(data);
+  // const data = await supabase
+  //   .from("order")
+  //   .select("*, student_id(*)")
+  //   .eq("teacher_id", req.query.teacher_id).gte("start_date", new Date().toISOString()).lte("end_date", new Date().toISOString())
+  //   .order("start_date", { ascending: true });
+  // res.send(data);
+
+  // select * from "order" where end_date>=date '2023-01-20' AND end_date<=date '2023-01-20' OR start_date<= date '2023-01-20' AND start_date>=date '2023-01-20';
 });
 app.get("/getAllTodayOrders", async (req, res) => {
   const data = await supabase
     .from("order")
     .select("*, student_id(*), teacher_id(*)")
     .eq("date", new Date().toISOString())
-    .order("date", { ascending: true });
+    .order("start_date", { ascending: true });
   res.send(data);
 });
+
+
+app.get("/getBannerImages", async (req, res) => {
+  const data = await supabase.storage.from("banner").list();
+  if (data.data?.length) {
+    let urls = [];
+    for (const imageItem of data.data) {
+      if (imageItem.name !== ".emptyFolderPlaceholder") {
+        urls.push(supabase.storage.from("banner").getPublicUrl(imageItem.name).data.publicUrl)
+      }
+    }
+    res.send({data: urls});
+  } else {
+    res.send({data: []})
+  }
+  
+});
+
+app.post("/uploadBannerImages", multer({ storage: storage }).single("photo"),async (req, res) => {
+
+    const uploadObj = await supabase.storage.from("banner").upload(uuidv4() + ".webp", req.file.buffer, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    res.send(uploadObj);
+  }
+);
+
+
+
+
+// app.get("/poc", async (req, res) => {
+//   const data = await supabase.rpc('check_booking', {startDate: '2023-01-30', endDate: '2023-01-30'})
+//   // const data = await supabase.from("poc").select("*").overlaps("start_date", '2023-01-30').overlaps("start_date", '2023-01-30')
+//   res.send(data);
+// });
 
 const port = 8080;
 app.listen(port, () => console.log(`connecting to  ${port}`));
