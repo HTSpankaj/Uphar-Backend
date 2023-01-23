@@ -967,12 +967,13 @@ app.post(
 );
 
 app.post("/transferStudentToOtherTeacher", async (req, res) => {
-  const { start_date, end_date, new_teacher_id, order_id, new_schedule_id } =
-    req.body;
+  const { start_date, end_date, new_teacher_id, order_id, start_time, end_time, new_schedule_id } = req.body;
 
   const check_bookingResponse = await supabase.rpc("check_booking", {
     startdate: start_date,
     enddate: end_date,
+    starttime: start_time,
+    endtime: end_time,
     teacherid: new_teacher_id,
   });
 

@@ -186,8 +186,11 @@ router.post("/bookTeacherScheduleSlot", async (req, res) => {
     const check_bookingResponse = await supabase.rpc("check_booking", {
       startdate: start_date,
       enddate: end_date,
+      starttime: start_time,
+      endtime: end_time,
       teacherid: teacher_id,
     });
+
     if (check_bookingResponse?.data && check_bookingResponse?.data?.length > 0) {
       res.send({ error: { message: "This slot already booked someone." } });
     } else {
