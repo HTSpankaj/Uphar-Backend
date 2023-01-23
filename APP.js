@@ -703,8 +703,14 @@ app.get("/dashboardApiForAnalytics", async (req, res) => {
   const { count: studentCount } = await supabase
     .from("student")
     .select("*", { count: "exact" });
+  const revenueResponse = await supabase.from("subscription-teacher-user").select("*", { count: "exact" });
+  let revenue = 0;
 
-  res.send({ adminCount, teacherCount, studentCount });
+  if (revenueResponse.data) {
+    revenue = revenueResponse.data.reduce((a, b) => a + b?.total_price || 0, 0);
+  }
+  
+  res.send({ adminCount, teacherCount, studentCount, revenue });
 });
 app.get("/dashboardApiForTeacherAnalytics", async (req, res) => {
   //const post=req.body
@@ -814,7 +820,7 @@ app.get("/getTeacherSubscribersStudentByTeacherId", async (req, res) => {
   const data = await supabase
     .from("subscription-teacher-user")
     .select(
-      "*, subscription_plan_id(*), student_id(*), teacher_id(*), schedule_id(*)"
+      "*, subscription_plan_id(*), student_id(*), teacher_id(*)"
     )
     .eq("teacher_id", req.query.teacher_id);
   res.send(data);
@@ -823,7 +829,7 @@ app.get("/getAllTeacherSubscribersStudent", async (req, res) => {
   const data = await supabase
     .from("subscription-teacher-user")
     .select(
-      "*, subscription_plan_id(*), student_id(*), teacher_id(*), schedule_id(*)"
+      "*, subscription_plan_id(*), student_id(*), teacher_id(*)"
     );
   res.send(data);
 });
@@ -892,8 +898,16 @@ app.get("/getAllTodayOrders", async (req, res) => {
   const data = await supabase
     .from("order")
     .select("*, student_id(*), teacher_id(*)")
-    .eq("date", new Date().toISOString())
+    .gte("start_date", new Date().toISOString())
+    .lte("end_date", new Date().toISOString())
     .order("start_date", { ascending: true });
+  res.send(data);
+});
+app.get("/getTeacherListExceptTeacherId", async (req, res) => {
+  const data = await supabase
+    .from("teacher")
+    .select("*, teacher-subject!left(*, subject_id(*, course_id(*))), schedule!left(*)")
+    .neq("teacher_id", req.query.teacher_id)
   res.send(data);
 });
 
@@ -925,7 +939,18 @@ app.post("/uploadBannerImages", multer({ storage: storage }).single("photo"),asy
   }
 );
 
+app.post("/transferStudentToOtherTeacher", async (req, res) => {
+  const {start_date, end_date, new_teacher_id, order_id, new_schedule_id} = req.body;
 
+  const check_bookingResponse = await supabase.rpc('check_booking', {startdate: start_date, enddate: end_date, teacherid: new_teacher_id})
+
+  if (check_bookingResponse?.data && check_bookingResponse?.data?.length > 0) {
+    res.send({error: {message: "This slot already booked someone."}});
+  } else {
+    const updateDataResponse = await supabase.from("order").update({teacher_id: new_teacher_id, schedule_id: new_schedule_id}).select("*").maybeSingle().eq("order_id", order_id);
+    res.send(updateDataResponse);
+  }
+});
 
 
 // app.get("/poc", async (req, res) => {
