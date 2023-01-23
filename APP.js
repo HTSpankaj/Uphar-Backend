@@ -1,7 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4 } = require("uuid");
+var studentsRouter = require("./ROUTE/student");
 
 const { createClient } = require("@supabase/supabase-js");
 const { notEqual } = require("assert"); // why this
@@ -16,9 +17,9 @@ const supabase = createClient(
 const app = express();
 app.use(cors());
 app.get("/", (req, res) => {
-  res.send(" hare krishna");
+  res.send({success: true});
 });
-
+app.use("/student", studentsRouter);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); //  form data
 //2
@@ -153,6 +154,25 @@ app.post("/teacherLogin", async (req, res) => {
     res.send(getTeacherResponse);
   } else {
     res.send({ user: null });
+  }
+});
+
+app.post("/passwordChangeTeacher", async (req, res) => {
+  const {email, password} = req.body;
+  const teacherResponse = await supabase.from("teacher").select("teacher_id").eq("email", email).maybeSingle();
+
+  if (teacherResponse.data && teacherResponse.data?.teacher_id) {
+    const updatePassword = await supabase.auth.admin.updateUserById(
+      teacherResponse.data.teacher_id,
+      { password: password }
+    );
+    if (updatePassword.data?.user) {
+      res.send({success: true});
+    } else {
+      res.send({ success: false, error: {message: "Something went wrong! Try again"} });
+    }
+  } else {
+    res.send({ success: false, error: {message: "There are no users with the email address you specified. Please try again.."} });
   }
 });
 //7
@@ -703,13 +723,15 @@ app.get("/dashboardApiForAnalytics", async (req, res) => {
   const { count: studentCount } = await supabase
     .from("student")
     .select("*", { count: "exact" });
-  const revenueResponse = await supabase.from("subscription-teacher-user").select("*", { count: "exact" });
+  const revenueResponse = await supabase
+    .from("subscription-teacher-user")
+    .select("*", { count: "exact" });
   let revenue = 0;
 
   if (revenueResponse.data) {
     revenue = revenueResponse.data.reduce((a, b) => a + b?.total_price || 0, 0);
   }
-  
+
   res.send({ adminCount, teacherCount, studentCount, revenue });
 });
 app.get("/dashboardApiForTeacherAnalytics", async (req, res) => {
@@ -819,18 +841,14 @@ app.post("/studentSubscribeToPlan", async (req, res) => {
 app.get("/getTeacherSubscribersStudentByTeacherId", async (req, res) => {
   const data = await supabase
     .from("subscription-teacher-user")
-    .select(
-      "*, subscription_plan_id(*), student_id(*), teacher_id(*)"
-    )
+    .select("*, subscription_plan_id(*), student_id(*), teacher_id(*)")
     .eq("teacher_id", req.query.teacher_id);
   res.send(data);
 });
 app.get("/getAllTeacherSubscribersStudent", async (req, res) => {
   const data = await supabase
     .from("subscription-teacher-user")
-    .select(
-      "*, subscription_plan_id(*), student_id(*), teacher_id(*)"
-    );
+    .select("*, subscription_plan_id(*), student_id(*), teacher_id(*)");
   res.send(data);
 });
 app.get("/getAllSubscriptions", async (req, res) => {
@@ -882,7 +900,9 @@ app.get("/getAllTodayOrdersByTeacherId", async (req, res) => {
   const data = await supabase
     .from("order")
     .select("*, student_id(*)")
-    .eq("teacher_id", req.query.teacher_id).gte("start_date", new Date().toISOString()).lte("end_date", new Date().toISOString())
+    .eq("teacher_id", req.query.teacher_id)
+    .gte("start_date", new Date().toISOString())
+    .lte("end_date", new Date().toISOString())
     .order("start_date", { ascending: true });
   res.send(data);
   // const data = await supabase
@@ -906,11 +926,12 @@ app.get("/getAllTodayOrders", async (req, res) => {
 app.get("/getTeacherListExceptTeacherId", async (req, res) => {
   const data = await supabase
     .from("teacher")
-    .select("*, teacher-subject!left(*, subject_id(*, course_id(*))), schedule!left(*)")
-    .neq("teacher_id", req.query.teacher_id)
+    .select(
+      "*, teacher-subject!left(*, subject_id(*, course_id(*))), schedule!left(*)"
+    )
+    .neq("teacher_id", req.query.teacher_id);
   res.send(data);
 });
-
 
 app.get("/getBannerImages", async (req, res) => {
   const data = await supabase.storage.from("banner").list();
@@ -918,19 +939,25 @@ app.get("/getBannerImages", async (req, res) => {
     let urls = [];
     for (const imageItem of data.data) {
       if (imageItem.name !== ".emptyFolderPlaceholder") {
-        urls.push(supabase.storage.from("banner").getPublicUrl(imageItem.name).data.publicUrl)
+        urls.push(
+          supabase.storage.from("banner").getPublicUrl(imageItem.name).data
+            .publicUrl
+        );
       }
     }
-    res.send({data: urls});
+    res.send({ data: urls });
   } else {
-    res.send({data: []})
+    res.send({ data: [] });
   }
-  
 });
 
-app.post("/uploadBannerImages", multer({ storage: storage }).single("photo"),async (req, res) => {
-
-    const uploadObj = await supabase.storage.from("banner").upload(uuidv4() + ".webp", req.file.buffer, {
+app.post(
+  "/uploadBannerImages",
+  multer({ storage: storage }).single("photo"),
+  async (req, res) => {
+    const uploadObj = await supabase.storage
+      .from("banner")
+      .upload(uuidv4() + ".webp", req.file.buffer, {
         cacheControl: "3600",
         upsert: true,
       });
@@ -940,18 +967,27 @@ app.post("/uploadBannerImages", multer({ storage: storage }).single("photo"),asy
 );
 
 app.post("/transferStudentToOtherTeacher", async (req, res) => {
-  const {start_date, end_date, new_teacher_id, order_id, new_schedule_id} = req.body;
+  const { start_date, end_date, new_teacher_id, order_id, new_schedule_id } =
+    req.body;
 
-  const check_bookingResponse = await supabase.rpc('check_booking', {startdate: start_date, enddate: end_date, teacherid: new_teacher_id})
+  const check_bookingResponse = await supabase.rpc("check_booking", {
+    startdate: start_date,
+    enddate: end_date,
+    teacherid: new_teacher_id,
+  });
 
   if (check_bookingResponse?.data && check_bookingResponse?.data?.length > 0) {
-    res.send({error: {message: "This slot already booked someone."}});
+    res.send({ error: { message: "This slot already booked someone." } });
   } else {
-    const updateDataResponse = await supabase.from("order").update({teacher_id: new_teacher_id, schedule_id: new_schedule_id}).select("*").maybeSingle().eq("order_id", order_id);
+    const updateDataResponse = await supabase
+      .from("order")
+      .update({ teacher_id: new_teacher_id, schedule_id: new_schedule_id })
+      .select("*")
+      .maybeSingle()
+      .eq("order_id", order_id);
     res.send(updateDataResponse);
   }
 });
-
 
 // app.get("/poc", async (req, res) => {
 //   const data = await supabase.rpc('check_booking', {startDate: '2023-01-30', endDate: '2023-01-30'})
