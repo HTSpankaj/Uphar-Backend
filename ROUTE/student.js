@@ -9,13 +9,11 @@ const supabase = createClient(
 const bodyParser = require("body-parser");
 //var app=express();
 router.use(bodyParser.json());
+const storage = multer.memoryStorage();
 
-/* GET users listing. */
 router.get("/", function (req, res, next) {
-  res.send("respond with a resource from student");
+  res.send("respond with a resource from student.js");
 });
-
-module.exports = router;
 
 router.post("/registrationStudent", async (req, res) => { 
   const post = req.body;
@@ -45,7 +43,6 @@ router.post("/registrationStudent", async (req, res) => {
   }
 });
 
-const storage = multer.memoryStorage();
 router.post("/studentUploadImage", multer({ storage: storage }).single("photo"), async (req, res) => { 
     const uploadObj = await supabase.storage
       .from("student")
@@ -95,7 +92,6 @@ router.get("/getAllCourseWithSubject", async (req, res) => {
   res.send(data);
 });
 
-
 router.get("/getTeacherList", async (req, res) => { 
   let data = await supabase.from("teacher").select("*");
   res.send(data);
@@ -110,7 +106,6 @@ router.get("/getAllSubscriptions", async (req, res) => {
   const data = await supabase.from("subscription-plan").select("*");
   res.send(data);
 });
-
 
 router.post("/studentSubscribeToPlan", async (req, res) => { 
   const {
@@ -141,10 +136,9 @@ router.post("/studentSubscribeToPlan", async (req, res) => {
       .maybeSingle();
     res.send(insertData);
   } else {
-    res.send({ error: "body parameters incorrect." });
+    res.send({ error: { message: "body parameters incorrect."} });
   }
 });
-
 
 router.get("/getOrderByStudentId", async (req, res) => { 
   const data = await supabase.from("order").select("*").eq("student_id", req.query.student_id);
@@ -206,3 +200,5 @@ router.post("/bookTeacherScheduleSlot", async (req, res) => {
     });
   }
 });
+
+module.exports = router;

@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const { v4: uuidv4 } = require("uuid");
 var studentsRouter = require("./ROUTE/student");
+var reviewRouter = require("./ROUTE/review");
 
 const { createClient } = require("@supabase/supabase-js");
 const { notEqual } = require("assert"); // why this
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
   res.send({success: true});
 });
 app.use("/student", studentsRouter);
+app.use("/review", reviewRouter);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); //  form data
 //2
