@@ -4,10 +4,12 @@ const cors = require("cors");
 const { v4: uuidv4 } = require("uuid");
 var studentsRouter = require("./ROUTE/student");
 var reviewRouter = require("./ROUTE/review");
+var notificationRouter = require("./ROUTE/notification").router;
 
 const { createClient } = require("@supabase/supabase-js");
 const { notEqual } = require("assert"); // why this
 var multer = require("multer"); // form data
+const addNotificationWhenTeacherAdd = require("./ROUTE/notification").addNotificationWhenTeacherAdd;
 
 // Create a single supabase client for interacting with your database
 const supabase = createClient(
@@ -22,6 +24,7 @@ app.get("/", (req, res) => {
 });
 app.use("/student", studentsRouter);
 app.use("/review", reviewRouter);
+app.use("/notification", notificationRouter);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); //  form data
 //2
@@ -122,17 +125,18 @@ app.post("/registrationTeacher", async (req, res) => {
     email_confirm: true,
   });
   if (createUserResponse.data.user) {
-    const insertData = await supabase
-      .from("teacher")
-      .insert({
-        teacher_id: createUserResponse.data.user.id,
-        email: createUserResponse.data.user.email,
-        created_at: createUserResponse.data.user.created_at,
-        updated_at: createUserResponse.data.user.updated_at,
-      })
-      .select("*")
-      .maybeSingle();
+    const insertData = await supabase.from("teacher").insert({
+      teacher_id: createUserResponse.data.user.id,
+      email: createUserResponse.data.user.email,
+      created_at: createUserResponse.data.user.created_at,
+      updated_at: createUserResponse.data.user.updated_at,
+    }).select("*").maybeSingle();
     //  console.log(created_at)
+
+    if (insertData.data) {
+      await addNotificationWhenTeacherAdd(createUserResponse.data.user.email);
+    }
+
     res.send(insertData);
     // please tell this one
   } else {

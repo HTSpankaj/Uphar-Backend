@@ -7,6 +7,7 @@ const supabase = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ1b3p6YnpkbWpnc2x0Z214cmZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTY3MjgxOTIxMCwiZXhwIjoxOTg4Mzk1MjEwfQ.1Ik1KqQuy8hovFvJW19M-dfVifHgIiLOWlWeQ3D-iNc"
 );
 const bodyParser = require("body-parser");
+const { addNotificationWhenOrderAdd } = require("./notification");
 //var app=express();
 router.use(bodyParser.json());
 const storage = multer.memoryStorage();
@@ -188,8 +189,9 @@ router.post("/bookTeacherScheduleSlot", async (req, res) => {
     if (check_bookingResponse?.data && check_bookingResponse?.data?.length > 0) {
       res.send({ error: { message: "This slot already booked someone." } });
     } else {
-      const updateDataResponse = await supabase.from("order").insert({ start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id }).select("*").maybeSingle().eq("order_id", order_id);
-      res.send(updateDataResponse);
+      const addOrderDataResponse = await supabase.from("order").insert({ start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id }).select("*").maybeSingle();
+      await addNotificationWhenOrderAdd(teacher_id, student_id);
+      res.send(addOrderDataResponse);
     }
   } else {
     res.send({
