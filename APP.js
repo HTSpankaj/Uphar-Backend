@@ -199,7 +199,7 @@ app.post("/updateTeacher", async (req, res) => {
   res.send(update);
 });
 app.get("/getTeacherList", async (req, res) => {
-  let { data, error } = await supabase.from("teacher").select("*");
+  let { data, error } = await supabase.from("teacher").select("*, review!left(*)");
 
   res.send(data);
 });
@@ -768,7 +768,7 @@ app.get("/getAdminById", async (req, res) => {
 app.get("/getTeacherById", async (req, res) => {
   const data = await supabase
     .from("teacher")
-    .select("*,teacher-subject!left(*, subject_id(*, course_id(*)))")
+    .select("*, teacher-subject!left(*, subject_id(*, course_id(*))), schedule!left(*)")
     .eq("teacher_id", req.query.teacher_id)
     .maybeSingle();
   res.send(data);

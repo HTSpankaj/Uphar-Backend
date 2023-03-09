@@ -26,22 +26,37 @@ router.post("/registrationStudent", async (req, res) => {
     email_confirm: true,
   });
   if (createUserResponse.data.user) {
-    const insertData = await supabase
-      .from("teacher")
-      .insert({
-        teacher_id: createUserResponse.data.user.id,
-        email: createUserResponse.data.user.email,
-        created_at: createUserResponse.data.user.created_at,
-        updated_at: createUserResponse.data.user.updated_at,
-      })
-      .select("*")
-      .maybeSingle();
-    //  console.log(created_at)
+    const insertData = await supabase.from("student").insert({
+      first_name: post.first_name,
+      last_name: post.last_name,
+      student_id: createUserResponse.data.user.id,
+      email: createUserResponse.data.user.email,
+      created_at: createUserResponse.data.user.created_at,
+      updated_at: createUserResponse.data.user.updated_at,
+    }).select("*").maybeSingle();
+    console.log(insertData)
     res.send(insertData);
     // please tell this one
   } else {
     res.send({ error: createUserResponse.error });
   }
+});
+
+router.post("/updateStudent", async (req, res) => {
+  const d = req.body;
+  let postData = { ...d };
+  delete postData.student_id;
+
+  console.log(postData);
+
+  const update = await supabase
+    .from("student")
+    .update(postData)
+    .select("*")
+    .maybeSingle()
+    .eq("student_id", d.student_id);
+
+  res.send(update);
 });
 
 router.post("/studentUploadImage", multer({ storage: storage }).single("photo"), async (req, res) => { 
@@ -105,6 +120,14 @@ router.get("/getTeacherById", async (req, res) => {
 
 router.get("/getAllSubscriptions", async (req, res) => { 
   const data = await supabase.from("subscription-plan").select("*");
+  res.send(data);
+});
+
+router.get("/getStudentSubscribedToTeacherPlan", async (req, res) => {
+  const { teacher_id, student_id } = req.query;
+  console.log("teacher_id => ", teacher_id);
+  console.log("student_id => ", student_id);
+  const data = await supabase.from("subscription-plan").select("*, subscription-teacher-user!left(*)").eq("subscription-teacher-user.student_id", student_id).eq("subscription-teacher-user.teacher_id", teacher_id);
   res.send(data);
 });
 
