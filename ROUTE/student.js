@@ -42,6 +42,11 @@ router.post("/registrationStudent", async (req, res) => {
   }
 });
 
+router.get("/getStudentById", async (req, res) => {
+  const data = await supabase.from("student").select("*").eq("student_id", req.query.student_id).maybeSingle();
+  res.send(data);
+});
+
 router.post("/updateStudent", async (req, res) => {
   const d = req.body;
   let postData = { ...d };
@@ -107,6 +112,10 @@ router.get("/getAllCourseWithSubject", async (req, res) => {
   const data = await supabase.from("course").select("*,subject!left(*)");
   res.send(data);
 });
+router.get("/getAllSubjectByCourseId", async (req, res) => { 
+  const data = await supabase.from("course").select("*,subject!left(*)").eq("course_id", req.query.course_id).maybeSingle();
+  res.send(data);
+});
 
 router.get("/getTeacherList", async (req, res) => { 
   let data = await supabase.from("teacher").select("*");
@@ -115,6 +124,16 @@ router.get("/getTeacherList", async (req, res) => {
 
 router.get("/getTeacherById", async (req, res) => { 
   const data = await supabase.from("teacher").select("*,teacher-subject!left(*, subject_id(*, course_id(*)))").eq("teacher_id", req.query.teacher_id).maybeSingle();
+  res.send(data);
+});
+
+router.get("/getScheduleByScheduleId", async (req, res) => { 
+  const data = await supabase.from("schedule").select("*, teacher_id(*)").eq("schedule_id", req.query.schedule_id).maybeSingle();
+  res.send(data);
+});
+
+router.get("/getTeachersBySubjectId", async (req, res) => { 
+  const data = await supabase.from("teacher-subject").select("*,teacher_id(*, review!left(*)), subject_id(*)").eq("subject_id", req.query.subject_id);
   res.send(data);
 });
 
@@ -198,9 +217,9 @@ router.post("/passwordChangeStudent", async (req, res) => {
 });
 
 router.post("/bookTeacherScheduleSlot", async (req, res) => {
-  const { start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id } = req.body;
+  const { start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id, group_details, booking_type } = req.body;
 
-  if (start_date && end_date && start_time && end_time && student_id && student_id && teacher_id, schedule_id) {
+  if (start_date && end_date && start_time && end_time && student_id && student_id && teacher_id && schedule_id && group_details && booking_type) {
     const check_bookingResponse = await supabase.rpc("check_booking", {
       startdate: start_date,
       enddate: end_date,
@@ -212,7 +231,7 @@ router.post("/bookTeacherScheduleSlot", async (req, res) => {
     if (check_bookingResponse?.data && check_bookingResponse?.data?.length > 0) {
       res.send({ error: { message: "This slot already booked someone." } });
     } else {
-      const addOrderDataResponse = await supabase.from("order").insert({ start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id }).select("*").maybeSingle();
+      const addOrderDataResponse = await supabase.from("order").insert({ start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id, group_details, booking_type }).select("*").maybeSingle();
       await addNotificationWhenOrderAdd(teacher_id, student_id);
       res.send(addOrderDataResponse);
     }
