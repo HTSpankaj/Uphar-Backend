@@ -122,6 +122,23 @@ router.get("/getTeacherList", async (req, res) => {
   res.send(data);
 });
 
+router.get("/getTeacherListWithFilter", async (req, res) => { 
+  let {selectedLanguage, selectedBoard} = req.query;
+  // selectedLanguage = selectedLanguage.split(",");
+  // selectedBoard = selectedBoard.split(",");
+  console.log({selectedLanguage, selectedBoard});
+  let data = await supabase.from("teacher").select("*, review!left(*)").or(`language.cs.{${selectedLanguage}}, board.cs.{${selectedBoard}}`)
+  // .contains('language', selectedLanguage)
+  // .contains('board', selectedBoard)
+  res.send(data);
+});
+
+router.get("/getTeachersBySubjectIdWithFilter", async (req, res) => { 
+  let {selectedLanguage, selectedBoard} = req.query;
+  const data = await supabase.from("teacher-subject").select("*,teacher_id(*, review!left(*)), subject_id(*)").eq("subject_id", req.query.subject_id).or(`language.cs.{${selectedLanguage}}, board.cs.{${selectedBoard}}`, { foreignTable: 'teacher_id' });
+  res.send(data);
+});
+
 router.get("/getTeacherById", async (req, res) => { 
   const data = await supabase.from("teacher").select("*,teacher-subject!left(*, subject_id(*, course_id(*)))").eq("teacher_id", req.query.teacher_id).maybeSingle();
   res.send(data);
@@ -144,8 +161,8 @@ router.get("/getAllSubscriptions", async (req, res) => {
 
 router.get("/getStudentSubscribedToTeacherPlan", async (req, res) => {
   const { teacher_id, student_id } = req.query;
-  console.log("teacher_id => ", teacher_id);
-  console.log("student_id => ", student_id);
+  // console.log("teacher_id => ", teacher_id);
+  // console.log("student_id => ", student_id);
   const data = await supabase.from("subscription-plan").select("*, subscription-teacher-user!left(*)").eq("subscription-teacher-user.student_id", student_id).eq("subscription-teacher-user.teacher_id", teacher_id);
   res.send(data);
 });
@@ -234,6 +251,33 @@ router.post("/bookTeacherScheduleSlot", async (req, res) => {
       const addOrderDataResponse = await supabase.from("order").insert({ start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id, group_details, booking_type }).select("*").maybeSingle();
       await addNotificationWhenOrderAdd(teacher_id, student_id);
       res.send(addOrderDataResponse);
+    }
+  } else {
+    res.send({
+      success: false,
+      error: {
+        message: "Please post body send properly. Please try again..",
+      },
+    });
+  }
+});
+
+router.post("/checkBookTeacherScheduleSlot", async (req, res) => {
+  const { start_date, end_date, start_time, end_time, teacher_id } = req.body;
+
+  if (start_date && end_date && start_time && end_time && teacher_id) {
+    const check_bookingResponse = await supabase.rpc("check_booking", {
+      startdate: start_date,
+      enddate: end_date,
+      starttime: start_time,
+      endtime: end_time,
+      teacherid: teacher_id,
+    });
+
+    if (check_bookingResponse?.data && check_bookingResponse?.data?.length > 0) {
+      res.send({ success: false, error: { message: "This slot already booked someone." } });
+    } else {
+      res.send({ success: true, error: null });
     }
   } else {
     res.send({
