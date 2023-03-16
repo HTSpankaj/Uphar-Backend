@@ -123,13 +123,27 @@ router.get("/getTeacherList", async (req, res) => {
 });
 
 router.get("/getTeacherListWithFilter", async (req, res) => { 
-  let {selectedLanguage, selectedBoard} = req.query;
+  let {selectedLanguage, selectedBoard, selectedSubject} = req.query;
   // selectedLanguage = selectedLanguage.split(",");
   // selectedBoard = selectedBoard.split(",");
-  console.log({selectedLanguage, selectedBoard});
-  let data = await supabase.from("teacher").select("*, review!left(*)").or(`language.cs.{${selectedLanguage}}, board.cs.{${selectedBoard}}`)
+  console.log({selectedLanguage, selectedBoard, selectedSubject});
+
+  var query = supabase.from("teacher").select("*, review!left(*), teacher-subject!left(*)");
+  // .or(`language.cs.{${selectedLanguage}}, board.cs.{${selectedBoard}}`)
   // .contains('language', selectedLanguage)
   // .contains('board', selectedBoard)
+
+  if (selectedLanguage) {
+    query = query.contains('language', selectedLanguage.split(","));
+  }
+  if (selectedBoard) {
+    query = query.contains('board', selectedBoard.split(","));
+  }
+  if (selectedSubject) {
+    query = query.in('teacher-subject.subject_id', selectedSubject.split(","));
+  }
+
+  let data = await query;
   res.send(data);
 });
 

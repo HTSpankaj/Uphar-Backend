@@ -1,6 +1,5 @@
 var express = require("express");
 var router = express.Router();
-var multer = require("multer");
 const { createClient } = require("@supabase/supabase-js");
 const supabase = createClient(
   "https://vuozzbzdmjgsltgmxrfo.supabase.co",
