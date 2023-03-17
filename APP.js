@@ -119,8 +119,7 @@ app.put("/Update", async (req, res) => {
 // 6 teacher login
 app.post("/registrationTeacher", async (req, res) => {
   const post = req.body;
-  console.log(req.body);
-
+  
   const createUserResponse = await supabase.auth.admin.createUser({
     email: post.email,
     password: post.password,
@@ -128,6 +127,9 @@ app.post("/registrationTeacher", async (req, res) => {
   });
   if (createUserResponse.data.user) {
     const insertData = await supabase.from("teacher").insert({
+      first_name: post?.first_name || "",
+      last_name: post?.last_name || "",
+      phone_number: post?.phone_number || "",
       teacher_id: createUserResponse.data.user.id,
       email: createUserResponse.data.user.email,
       created_at: createUserResponse.data.user.created_at,
@@ -770,7 +772,7 @@ app.get("/getAdminById", async (req, res) => {
 app.get("/getTeacherById", async (req, res) => {
   const data = await supabase
     .from("teacher")
-    .select("*, teacher-subject!left(*, subject_id(*, course_id(*))), schedule!left(*)")
+    .select("*, teacher-subject!left(*, subject_id(*, course_id(*))), schedule!left(*), review!left(*)")
     .eq("teacher_id", req.query.teacher_id)
     .maybeSingle();
   res.send(data);

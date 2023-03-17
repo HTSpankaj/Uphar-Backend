@@ -10,11 +10,17 @@ const bodyParser = require("body-parser");
 router.use(bodyParser.json());
 const storage = multer.memoryStorage();
 
+const twilio = require('twilio');
+const accountSid = 'AC3900352c18df0b274177df76560abf22'; // Your Account SID from www.twilio.com/console
+const authToken = '18346dda8f1d6a7be797460322cf7c06'; // Your Auth Token from www.twilio.com/console
+
+const client = require('twilio')(accountSid, authToken)
+
 router.get("/", function (req, res, next) {
   res.send("respond with a resource from commonData.js");
 });
 
-router.get("/getHowToUseData", async (req, res) => {
+router.get("/genpm install twiliotHowToUseData", async (req, res) => {
   const data = await supabase.from("common-data").select("how_to_use").eq("id", 1).maybeSingle();
   res.send(data);
 });
@@ -45,5 +51,21 @@ router.post("/uploadEditorImage", multer({ storage: storage }).single("photo"), 
     }
   })
 });
+
+router.post("/sendOTP", async (req, res) => {
+  let postData = { ...req.body };
+  // const data = await supabase.from("common-data").update(postData).select("*").eq("id", 1).maybeSingle();
+  // res.send(data);
+  try {
+    var otp = Math.floor(1000 + Math.random() * 9000);
+    const twilioClientResponse = await client.messages.create({...postData, body:`Dear user, use this One Time Password ${otp} to verify your number from Bizorclass.`, from: "+15618232622"});
+    res.send({ success: true, data: twilioClientResponse, otp });
+            
+  } catch (error) {
+    console.log("Twilio error => ", error);
+    res.send({ success: false, error });
+  }
+});
+
 
 module.exports = router;

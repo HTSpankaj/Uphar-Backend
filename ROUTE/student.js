@@ -18,7 +18,6 @@ router.get("/", function (req, res, next) {
 
 router.post("/registrationStudent", async (req, res) => { 
   const post = req.body;
-  console.log(req.body);
 
   const createUserResponse = await supabase.auth.admin.createUser({
     email: post.email,
@@ -29,6 +28,7 @@ router.post("/registrationStudent", async (req, res) => {
     const insertData = await supabase.from("student").insert({
       first_name: post.first_name,
       last_name: post.last_name,
+      phone_number: post.phone_number,
       student_id: createUserResponse.data.user.id,
       email: createUserResponse.data.user.email,
       created_at: createUserResponse.data.user.created_at,
