@@ -961,20 +961,22 @@ app.get("/getBannerImages", async (req, res) => {
   }
 });
 
-app.post(
-  "/uploadBannerImages",
-  multer({ storage: storage }).single("photo"),
-  async (req, res) => {
-    const uploadObj = await supabase.storage
-      .from("banner")
-      .upload(uuidv4() + ".webp", req.file.buffer, {
-        cacheControl: "3600",
-        upsert: true,
-      });
+app.post("/uploadBannerImages", multer({ storage: storage }).single("photo"), async (req, res) => {
+  const uploadObj = await supabase.storage
+    .from("banner")
+    .upload(uuidv4() + ".webp", req.file.buffer, {
+      cacheControl: "3600",
+      upsert: true,
+    });
 
-    res.send(uploadObj);
-  }
-);
+  res.send(uploadObj);
+});
+app.post("/deleteBannerImage", async (req, res) => {
+  const {bannerPath} = req.body;
+  
+  const response = await supabase.storage.from("banner").remove([bannerPath.split("v1/object/public/banner/")[bannerPath.split("v1/object/public/banner/").length - 1]])
+  res.send(response);
+});
 
 app.post("/transferStudentToOtherTeacher", async (req, res) => {
   const { start_date, end_date, new_teacher_id, order_id, start_time, end_time, new_schedule_id } = req.body;
