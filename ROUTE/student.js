@@ -11,6 +11,7 @@ const { addNotificationWhenOrderAdd } = require("./notification");
 //var app=express();
 router.use(bodyParser.json());
 const storage = multer.memoryStorage();
+const refundRequest = require('./payment').refundRequest;
 
 router.get("/", function (req, res, next) {
   res.send("respond with a resource from student.js");
@@ -219,13 +220,42 @@ router.get("/getOrderByStudentId", async (req, res) => {
   res.send(data);
 });
 
+router.post("/cancelOrderByOrderId", async (req, res) => {
+  let {order_id, cancel_reason} = { ...req.body }; 
+
+  const orderDetails = await supabase.from("order").select("*, subscription_teacher_user_id(*)").eq("order_id", order_id).maybeSingle();
+  if (orderDetails.data) {
+    try {
+      //todo hit razorpay refund
+      const refundRequestResponse = await refundRequest(orderDetails.data.subscription_teacher_user_id.razorpay_payment_id, orderDetails.data.subscription_teacher_user_id.total_price);
+      
+      //todo update Table
+      const postBody = {
+        cancel_reason,
+        razorpay_refund_id: refundRequestResponse.id,
+        cancel_status: true,
+        refund_status: refundRequestResponse.status,
+      }
+      const orderUpdateResponse = await supabase.from("order").update(postBody).select("*, teacher_id(*)").eq("order_id", order_id).maybeSingle();
+      res.send({success: true, ...orderUpdateResponse});
+
+    } catch (error) {
+      res.send({success: false, error});
+    }    
+  } else {
+    res.send({success: false, error: orderDetails.error});
+  }
+});
+
 router.get("/getOngoingOrderByStudentId", async (req, res) => {
-  const data = await supabase.from("order").select("*, teacher_id(*)").eq("student_id", req.query.student_id).gte("end_date", new Date().toISOString().split("T")[0]);
+  const data = await supabase.from("order").select("*, teacher_id(*)").eq("student_id", req.query.student_id).eq("cancel_status", false).gte("end_date", new Date().toISOString().split("T")[0]);
   res.send(data);
 });
 
 router.get("/getHistoryOrderByStudentId", async (req, res) => {
-  const data = await supabase.from("order").select("*, teacher_id(*)").eq("student_id", req.query.student_id).lt("end_date", new Date().toISOString().split("T")[0]);
+  const data = await supabase.from("order").select("*, teacher_id(*)").eq("student_id", req.query.student_id)
+  // .lt("end_date", new Date().toISOString().split("T")[0])
+  .or(`cancel_status.eq.true,end_date.lt.${new Date().toISOString().split("T")[0]}`);
   res.send(data);
 });
 
@@ -312,6 +342,11 @@ router.post("/checkBookTeacherScheduleSlot", async (req, res) => {
       },
     });
   }
+});
+
+router.get("/getOrderById", async (req, res) => {
+  const data = await supabase.from("order").select("*, teacher_id(*)").eq("order_id", req.query.order_id).maybeSingle();
+  res.send(data);
 });
 
 module.exports = router;

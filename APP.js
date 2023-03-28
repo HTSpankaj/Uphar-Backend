@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require("uuid");
 var studentsRouter = require("./ROUTE/student");
 var reviewRouter = require("./ROUTE/review");
 var commonDataRouter = require("./ROUTE/commonData");
+var paymentRouter = require("./ROUTE/payment").router;
 var notificationRouter = require("./ROUTE/notification").router;
 
 const { createClient } = require("@supabase/supabase-js");
@@ -26,6 +27,7 @@ app.get("/", (req, res) => {
 app.use("/student", studentsRouter);
 app.use("/review", reviewRouter);
 app.use("/commonData", commonDataRouter);
+app.use("/payment", paymentRouter);
 app.use("/notification", notificationRouter);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); //  form data

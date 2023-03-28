@@ -20,7 +20,7 @@ router.get("/", function (req, res, next) {
   res.send("respond with a resource from commonData.js");
 });
 
-router.get("/genpm install twiliotHowToUseData", async (req, res) => {
+router.get("/getHowToUseData", async (req, res) => {
   const data = await supabase.from("common-data").select("how_to_use").eq("id", 1).maybeSingle();
   res.send(data);
 });
