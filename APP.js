@@ -7,6 +7,7 @@ var reviewRouter = require("./ROUTE/review");
 var commonDataRouter = require("./ROUTE/commonData");
 var paymentRouter = require("./ROUTE/payment").router;
 var notificationRouter = require("./ROUTE/notification").router;
+var orderRouter = require("./ROUTE/order");
 
 const { createClient } = require("@supabase/supabase-js");
 const { notEqual } = require("assert"); // why this
@@ -29,6 +30,7 @@ app.use("/review", reviewRouter);
 app.use("/commonData", commonDataRouter);
 app.use("/payment", paymentRouter);
 app.use("/notification", notificationRouter);
+app.use("/order", orderRouter);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true })); //  form data
 //2

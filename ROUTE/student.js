@@ -216,7 +216,7 @@ router.post("/studentSubscribeToPlan", async (req, res) => {
 });
 
 router.get("/getOrderByStudentId", async (req, res) => {
-  const data = await supabase.from("order").select("*, teacher_id(*)").eq("student_id", req.query.student_id);
+  const data = await supabase.from("order").select("*, teacher_id(*), change-teacher-request!left(*)").eq("student_id", req.query.student_id);
   res.send(data);
 });
 
@@ -248,7 +248,7 @@ router.post("/cancelOrderByOrderId", async (req, res) => {
 });
 
 router.get("/getOngoingOrderByStudentId", async (req, res) => {
-  const data = await supabase.from("order").select("*, teacher_id(*)").eq("student_id", req.query.student_id).eq("cancel_status", false).gte("end_date", new Date().toISOString().split("T")[0]);
+  const data = await supabase.from("order").select("*, teacher_id(*), change-teacher-request!left(*)").eq("student_id", req.query.student_id).eq("cancel_status", false).gte("end_date", new Date().toISOString().split("T")[0]);
   res.send(data);
 });
 
@@ -345,7 +345,7 @@ router.post("/checkBookTeacherScheduleSlot", async (req, res) => {
 });
 
 router.get("/getOrderById", async (req, res) => {
-  const data = await supabase.from("order").select("*, teacher_id(*)").eq("order_id", req.query.order_id).maybeSingle();
+  const data = await supabase.from("order").select("*, teacher_id(*), change-teacher-request!left(*, new_teacher_id(*)), subscription_teacher_user_id(*)").eq("order_id", req.query.order_id).maybeSingle();
   res.send(data);
 });
 
