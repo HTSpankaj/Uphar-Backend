@@ -32,6 +32,14 @@ router.post("/registrationStudent", async (req, res) => {
       phone_number: post.phone_number,
       student_id: createUserResponse.data.user.id,
       email: createUserResponse.data.user.email,
+      father_name: post.father_name,
+      mother_name: post.mother_name,
+      gender: post.gender,
+      dob: post.dob,
+      class: post.class,
+      recent_tuition_mode: post.recent_tuition_mode,
+      address: post.address,
+      school_name: post.school_name,
       created_at: createUserResponse.data.user.created_at,
       updated_at: createUserResponse.data.user.updated_at,
     }).select("*").maybeSingle();
@@ -53,7 +61,7 @@ router.post("/updateStudent", async (req, res) => {
   let postData = { ...d };
   delete postData.student_id;
 
-  console.log(postData);
+  // console.log(postData);
 
   const update = await supabase
     .from("student")
@@ -190,13 +198,7 @@ router.post("/studentSubscribeToPlan", async (req, res) => {
     razorpay_payment_id,
     total_price,
   } = req.body;
-  console.log({
-    teacher_id,
-    student_id,
-    subscription_plan_id,
-    razorpay_payment_id,
-    total_price,
-  });
+  console.log({ teacher_id, student_id, subscription_plan_id, razorpay_payment_id, total_price, });
   if (
     teacher_id &&
     student_id &&
