@@ -92,7 +92,7 @@ router.post("/acceptTransferTeacherRequest", async (req, res) => {
         }
         const orderResponse = await supabase.from("order").update(postObject).eq("order_id", order_id).select("*, student_id(*), teacher_id(*)").maybeSingle();
         if (orderResponse.data) {
-          res.send(data);
+          res.send(orderResponse);
         } else {
           throw orderResponse;
         }
