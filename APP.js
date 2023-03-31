@@ -866,18 +866,15 @@ app.get("/getAllTeacherSubscribersStudent", async (req, res) => {
   res.send(data);
 });
 app.get("/getAllSubscriptions", async (req, res) => {
-  const data = await supabase.from("subscription-plan").select("*");
+  const data = await supabase.from("subscription-plan").select("*, course_id(*)");
   res.send(data);
 });
 
 app.post("/addSubscriptionPlan", async (req, res) => {
-  const insertData = await supabase
-    .from("subscription-plan")
-    .insert(req.body)
-    .select("*")
-    .maybeSingle();
+  const insertData = await supabase.from("subscription-plan").insert(req.body).select("*").maybeSingle();
   res.send(insertData);
 });
+
 app.post("/updateSubscriptionPlanById", async (req, res) => {
   const d = req.body;
   let postData = { ...d };

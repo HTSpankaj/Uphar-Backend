@@ -15,12 +15,12 @@ router.get("/", function (req, res, next) {
 
 
 router.get("/getAllOngoingOrder", async (req, res) => {
-  const data = await supabase.from("order").select("*, teacher_id(*), change-teacher-request!left(*)").eq("cancel_status", false).gte("end_date", new Date().toISOString().split("T")[0]);
+  const data = await supabase.from("order").select("*, teacher_id(*), student_id(*), change-teacher-request!left(*)").eq("cancel_status", false).gte("end_date", new Date().toISOString().split("T")[0]);
   res.send(data);
 });
 
 router.get("/getAllHistoryOrder", async (req, res) => {
-  const data = await supabase.from("order").select("*, teacher_id(*)")
+  const data = await supabase.from("order").select("*, teacher_id(*), student_id(*)")
   // .lt("end_date", new Date().toISOString().split("T")[0])
   .or(`cancel_status.eq.true,end_date.lt.${new Date().toISOString().split("T")[0]}`);
   res.send(data);
@@ -66,26 +66,42 @@ router.get("/getAllTransferTeacherRequest", async (req, res) => {
   res.send(data);
 });
 
+// router.post("/acceptTransferTeacherRequest", async (req, res) => {
+//   let { change_teacher_request_id } = { ...req.body };
+//   if (change_teacher_request_id) {
+//     const data = await supabase.from("change-teacher-request").update({request_status: "accept"}).eq("change_teacher_request_id", change_teacher_request_id).select("*, order_id(*, student_id(*)), new_teacher_id(*), old_teacher_id(*)").maybeSingle();
+//     res.send(data);
+//   } else {
+//     res.send({error: {message: "Invalid data pass."}});
+//   }
+// });
+
 router.post("/acceptTransferTeacherRequest", async (req, res) => {
-  let { change_teacher_request_id } = { ...req.body };
-  
-  // let { change_teacher_request_id, teacher_id, start_date, end_date, start_time, end_time, schedule_id, order_id } = { ...req.body };
-  // if (change_teacher_request_id && teacher_id && start_date && end_date && start_time && end_time && schedule_id && order_id) {
-  if (change_teacher_request_id) {
-    // try {
-    //   const data = await supabase.from("change-teacher-request").update({request_status: "accept"}).eq("change_teacher_request_id", change_teacher_request_id).select("*, order_id(*, student_id(*)), new_teacher_id(*), old_teacher_id(*)").maybeSingle();
-    //   let postObject = {
-    //     teacher_id: teacher_id,
-    //     start_date: start_date,
-    //     end_date: end_date,
-    //     start_time: start_time,
-    //     end_time: end_time,
-    //     schedule_id: schedule_id,
-    //   }
-    //   res.send(data);
-    // } catch (error) {
-    //   res.send(error);
-    // }
+  let { change_teacher_request_id, teacher_id, start_date, end_date, start_time, end_time, schedule_id, order_id } = { ...req.body };
+  if (change_teacher_request_id && teacher_id && start_date && end_date && start_time && end_time && schedule_id && order_id) {
+    try {
+      const changeTeacherRequestResponse = await supabase.from("change-teacher-request").update({request_status: "accept"}).eq("change_teacher_request_id", change_teacher_request_id).select("*, order_id(*, student_id(*)), new_teacher_id(*), old_teacher_id(*)").maybeSingle();
+      if (changeTeacherRequestResponse.data) {
+        let postObject = {
+          teacher_id: teacher_id,
+          start_date: start_date,
+          end_date: end_date,
+          start_time: start_time,
+          end_time: end_time,
+          schedule_id: schedule_id,
+        }
+        const orderResponse = await supabase.from("order").update(postObject).eq("order_id", order_id).select("*, student_id(*), teacher_id(*)").maybeSingle();
+        if (orderResponse.data) {
+          res.send(data);
+        } else {
+          throw orderResponse;
+        }
+      } else {
+        throw changeTeacherRequestResponse;
+      }
+    } catch (error) {
+      res.send(error);
+    }
     const data = await supabase.from("change-teacher-request").update({request_status: "accept"}).eq("change_teacher_request_id", change_teacher_request_id).select("*, order_id(*, student_id(*)), new_teacher_id(*), old_teacher_id(*)").maybeSingle();
   } else {
     res.send({error: {message: "Invalid data pass."}});
