@@ -799,6 +799,11 @@ app.get("/getAllCourseWithSubject", async (req, res) => {
   //  res.send(tun)
 });
 
+app.get("/getAllActiveCourseWithSubject", async (req, res) => {
+  const data = await supabase.from("course").select("*,subject!left(*)").eq("is_course_active", true);
+  res.send(data);
+});
+
 app.get("/getAllScheduleByTeacherId", async (req, res) => {
   const data = await supabase
     .from("schedule")

@@ -118,7 +118,7 @@ router.post("/studentLogin", async (req, res) => {
 });
 
 router.get("/getAllCourseWithSubject", async (req, res) => { 
-  const data = await supabase.from("course").select("*,subject!left(*)");
+  const data = await supabase.from("course").select("*,subject!left(*)").eq("is_course_active", true);
   res.send(data);
 });
 router.get("/getAllSubjectByCourseId", async (req, res) => { 
