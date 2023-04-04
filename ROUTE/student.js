@@ -278,6 +278,13 @@ router.get("/getOngoingOrderByTeacherId", async (req, res) => {
   res.send(data);
 });
 
+router.get("/getHistoryOrderByTeacherId", async (req, res) => {
+  const data = await supabase.from("order").select("*, teacher_id(*)").eq("teacher_id", req.query.teacher_id)
+  // .lt("end_date", new Date().toISOString().split("T")[0])
+  .or(`cancel_status.eq.true,end_date.lt.${new Date().toISOString().split("T")[0]}`);
+  res.send(data);
+});
+
 
 router.post("/passwordChangeStudent", async (req, res) => { 
   
