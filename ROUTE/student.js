@@ -375,4 +375,12 @@ router.get("/getOrderById", async (req, res) => {
   res.send(data);
 });
 
+router.get("/getUsersWithPagination", async (req, res) => {
+  const { pageNo } = req.query;
+  const limit = 21;
+
+  let data = await supabase.from("student").select("*", {count: "exact"}).range((pageNo * limit), ((pageNo * limit) + (limit - 1)));
+  res.send(data);
+});
+
 module.exports = router;
