@@ -12,7 +12,8 @@ var orderRouter = require("./ROUTE/order");
 const { createClient } = require("@supabase/supabase-js");
 const { notEqual } = require("assert"); // why this
 var multer = require("multer"); // form data
-const addNotificationWhenTeacherAdd = require("./ROUTE/notification").addNotificationWhenTeacherAdd;
+const addNotificationWhenTeacherAdd =
+  require("./ROUTE/notification").addNotificationWhenTeacherAdd;
 
 // Create a single supabase client for interacting with your database
 const supabase = createClient(
@@ -23,7 +24,7 @@ const supabase = createClient(
 const app = express();
 app.use(cors());
 app.get("/", (req, res) => {
-  res.send({success: true});
+  res.send({ success: true });
 });
 app.use("/student", studentsRouter);
 app.use("/review", reviewRouter);
@@ -123,22 +124,26 @@ app.put("/Update", async (req, res) => {
 // 6 teacher login
 app.post("/registrationTeacher", async (req, res) => {
   const post = req.body;
-  
+
   const createUserResponse = await supabase.auth.admin.createUser({
     email: post.email,
     password: post.password,
     email_confirm: true,
   });
   if (createUserResponse.data.user) {
-    const insertData = await supabase.from("teacher").insert({
-      first_name: post?.first_name || "",
-      last_name: post?.last_name || "",
-      phone_number: post?.phone_number || "",
-      teacher_id: createUserResponse.data.user.id,
-      email: createUserResponse.data.user.email,
-      created_at: createUserResponse.data.user.created_at,
-      updated_at: createUserResponse.data.user.updated_at,
-    }).select("*").maybeSingle();
+    const insertData = await supabase
+      .from("teacher")
+      .insert({
+        first_name: post?.first_name || "",
+        last_name: post?.last_name || "",
+        phone_number: post?.phone_number || "",
+        teacher_id: createUserResponse.data.user.id,
+        email: createUserResponse.data.user.email,
+        created_at: createUserResponse.data.user.created_at,
+        updated_at: createUserResponse.data.user.updated_at,
+      })
+      .select("*")
+      .maybeSingle();
     //  console.log(created_at)
 
     if (insertData.data) {
@@ -172,8 +177,12 @@ app.post("/teacherLogin", async (req, res) => {
 });
 
 app.post("/passwordChangeTeacher", async (req, res) => {
-  const {email, password} = req.body;
-  const teacherResponse = await supabase.from("teacher").select("teacher_id").eq("email", email).maybeSingle();
+  const { email, password } = req.body;
+  const teacherResponse = await supabase
+    .from("teacher")
+    .select("teacher_id")
+    .eq("email", email)
+    .maybeSingle();
 
   if (teacherResponse.data && teacherResponse.data?.teacher_id) {
     const updatePassword = await supabase.auth.admin.updateUserById(
@@ -181,12 +190,21 @@ app.post("/passwordChangeTeacher", async (req, res) => {
       { password: password }
     );
     if (updatePassword.data?.user) {
-      res.send({success: true});
+      res.send({ success: true });
     } else {
-      res.send({ success: false, error: {message: "Something went wrong! Try again"} });
+      res.send({
+        success: false,
+        error: { message: "Something went wrong! Try again" },
+      });
     }
   } else {
-    res.send({ success: false, error: {message: "There are no users with the email address you specified. Please try again.."} });
+    res.send({
+      success: false,
+      error: {
+        message:
+          "There are no users with the email address you specified. Please try again..",
+      },
+    });
   }
 });
 //7
@@ -207,7 +225,9 @@ app.post("/updateTeacher", async (req, res) => {
   res.send(update);
 });
 app.get("/getTeacherList", async (req, res) => {
-  let { data, error } = await supabase.from("teacher").select("*, review!left(*)");
+  let { data, error } = await supabase
+    .from("teacher")
+    .select("*, review!left(*)");
 
   res.send(data);
 });
@@ -481,7 +501,15 @@ app.post("/addCourseAndSubjectToTeacher", async (req, res) => {
     .insert(po)
     .select("*")
     .maybeSingle();
+  res.send(insertDat);
+});
 
+app.post("/deleteCourseAndSubjectToTeacher", async (req, res) => {
+  const { teacher_subject_id } = req.body;
+  const insertDat = await supabase
+    .from("teacher-subject")
+    .delete()
+    .eq("teacher-subject_id", teacher_subject_id);
   res.send(insertDat);
 });
 
@@ -776,7 +804,9 @@ app.get("/getAdminById", async (req, res) => {
 app.get("/getTeacherById", async (req, res) => {
   const data = await supabase
     .from("teacher")
-    .select("*, teacher-subject!left(*, subject_id(*, course_id(*))), schedule!left(*), review!left(*)")
+    .select(
+      "*, teacher-subject!left(*, subject_id(*, course_id(*))), schedule!left(*), review!left(*)"
+    )
     .eq("teacher_id", req.query.teacher_id)
     .maybeSingle();
   res.send(data);
@@ -800,7 +830,10 @@ app.get("/getAllCourseWithSubject", async (req, res) => {
 });
 
 app.get("/getAllActiveCourseWithSubject", async (req, res) => {
-  const data = await supabase.from("course").select("*,subject!left(*)").eq("is_course_active", true);
+  const data = await supabase
+    .from("course")
+    .select("*,subject!left(*)")
+    .eq("is_course_active", true);
   res.send(data);
 });
 
@@ -824,6 +857,15 @@ app.post("/addSchedule", async (req, res) => {
     .maybeSingle();
   res.send(insertData);
 });
+
+app.post("/updateSchedule", async (req, res) => {
+  const postBody = {...req.body};
+  delete postBody.schedule_id;
+  
+  const updateData = await supabase.from("schedule").update(req.body).select("*").maybeSingle().eq("schedule_id", req.body.schedule_id);
+  res.send(updateData);
+});
+
 
 app.post("/studentSubscribeToPlan", async (req, res) => {
   const {
@@ -860,7 +902,7 @@ app.post("/studentSubscribeToPlan", async (req, res) => {
 app.get("/getTeacherSubscribersStudentByTeacherId", async (req, res) => {
   const data = await supabase
     .from("subscription-teacher-user")
-    .select("*, subscription_plan_id(*), student_id(*), teacher_id(*)")
+    .select("*, subscription_plan_id(*), student_id(*), teacher_id(*), order!left(*)")
     .eq("teacher_id", req.query.teacher_id);
   res.send(data);
 });
@@ -871,12 +913,18 @@ app.get("/getAllTeacherSubscribersStudent", async (req, res) => {
   res.send(data);
 });
 app.get("/getAllSubscriptions", async (req, res) => {
-  const data = await supabase.from("subscription-plan").select("*, course_id(*)");
+  const data = await supabase
+    .from("subscription-plan")
+    .select("*, course_id(*)");
   res.send(data);
 });
 
 app.post("/addSubscriptionPlan", async (req, res) => {
-  const insertData = await supabase.from("subscription-plan").insert(req.body).select("*").maybeSingle();
+  const insertData = await supabase
+    .from("subscription-plan")
+    .insert(req.body)
+    .select("*")
+    .maybeSingle();
   res.send(insertData);
 });
 
@@ -967,25 +1015,43 @@ app.get("/getBannerImages", async (req, res) => {
   }
 });
 
-app.post("/uploadBannerImages", multer({ storage: storage }).single("photo"), async (req, res) => {
-  const uploadObj = await supabase.storage
-    .from("banner")
-    .upload(uuidv4() + ".webp", req.file.buffer, {
-      cacheControl: "3600",
-      upsert: true,
-    });
+app.post(
+  "/uploadBannerImages",
+  multer({ storage: storage }).single("photo"),
+  async (req, res) => {
+    const uploadObj = await supabase.storage
+      .from("banner")
+      .upload(uuidv4() + ".webp", req.file.buffer, {
+        cacheControl: "3600",
+        upsert: true,
+      });
 
-  res.send(uploadObj);
-});
+    res.send(uploadObj);
+  }
+);
 app.post("/deleteBannerImage", async (req, res) => {
-  const {bannerPath} = req.body;
-  
-  const response = await supabase.storage.from("banner").remove([bannerPath.split("v1/object/public/banner/")[bannerPath.split("v1/object/public/banner/").length - 1]])
+  const { bannerPath } = req.body;
+
+  const response = await supabase.storage
+    .from("banner")
+    .remove([
+      bannerPath.split("v1/object/public/banner/")[
+        bannerPath.split("v1/object/public/banner/").length - 1
+      ],
+    ]);
   res.send(response);
 });
 
 app.post("/transferStudentToOtherTeacher", async (req, res) => {
-  const { start_date, end_date, new_teacher_id, order_id, start_time, end_time, new_schedule_id } = req.body;
+  const {
+    start_date,
+    end_date,
+    new_teacher_id,
+    order_id,
+    start_time,
+    end_time,
+    new_schedule_id,
+  } = req.body;
 
   const check_bookingResponse = await supabase.rpc("check_booking", {
     startdate: start_date,
