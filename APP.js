@@ -493,6 +493,12 @@ app.post("/addSubjectToCourse", async (req, res) => {
   res.send(insertDat);
 });
 
+app.post("/deleteSubjectFromCourse", async (req, res) => {
+  const { subject_id } = req.body;
+  const insertDat = await supabase.from("subject").delete().eq("subject_id", subject_id);
+  res.send(insertDat);
+});
+
 //  15  teacher-subject table
 app.post("/addCourseAndSubjectToTeacher", async (req, res) => {
   const po = req.body;
