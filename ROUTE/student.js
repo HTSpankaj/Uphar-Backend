@@ -381,7 +381,7 @@ router.get("/getUsersWithPagination", async (req, res) => {
 
   let query = supabase.from("student").select("*", {count: "exact"});
 
-  if (searchInputValue && searchInputValue !== "" && searchInputValue?.split(" ")?.map(m => `'${m}'`)?.join(" & ")) {
+  if (searchInputValue && searchInputValue !== "") {
     // query = query.ilike('student_full_name', searchInputValue?.split(" ")?.filter(f => f !== '').map(m => `'${m}'`)?.join(" & "));
     query = query.ilike('student_full_name', `%${searchInputValue}%`);
   }
