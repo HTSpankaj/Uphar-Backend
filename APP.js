@@ -136,7 +136,7 @@ app.post("/registrationTeacher", async (req, res) => {
       .insert({
         first_name: post?.first_name || "",
         last_name: post?.last_name || "",
-        phone_number: post?.phone_number || "",
+        // phone_number: post?.phone_number || "",
         teacher_id: createUserResponse.data.user.id,
         email: createUserResponse.data.user.email,
         created_at: createUserResponse.data.user.created_at,
