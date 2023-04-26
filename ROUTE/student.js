@@ -376,10 +376,16 @@ router.get("/getOrderById", async (req, res) => {
 });
 
 router.get("/getUsersWithPagination", async (req, res) => {
-  const { pageNo } = req.query;
+  const { pageNo, searchInputValue } = req.query;
   const limit = 21;
 
-  let data = await supabase.from("student").select("*", {count: "exact"}).range((pageNo * limit), ((pageNo * limit) + (limit - 1)));
+  let query = supabase.from("student").select("*", {count: "exact"});
+
+  if (searchInputValue && searchInputValue !== "" && searchInputValue?.split(" ")?.map(m => `'${m}'`)?.join(" & ")) {
+    // query = query.ilike('student_full_name', searchInputValue?.split(" ")?.filter(f => f !== '').map(m => `'${m}'`)?.join(" & "));
+    query = query.ilike('student_full_name', `%${searchInputValue}%`);
+  }
+  const data = await query.range((pageNo * limit), ((pageNo * limit) + (limit - 1)));
   res.send(data);
 });
 
