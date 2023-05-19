@@ -315,9 +315,9 @@ router.post("/passwordChangeStudent", async (req, res) => {
 });
 
 router.post("/bookTeacherScheduleSlot", async (req, res) => {
-  const { start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id, group_details, booking_type, subscription_teacher_user_id, address, course_id } = req.body;
+  const { start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id, group_details, booking_type, subscription_teacher_user_id, address, course_id, latitude, longitude } = req.body;
 
-  if (start_date && end_date && start_time && end_time && student_id && student_id && teacher_id && schedule_id && group_details && booking_type && address && course_id) {
+  if (start_date && end_date && start_time && end_time && student_id && student_id && teacher_id && schedule_id && group_details && booking_type && address && course_id && latitude && longitude) {
     const check_bookingResponse = await supabase.rpc("check_booking", {
       startdate: start_date,
       enddate: end_date,
@@ -329,7 +329,7 @@ router.post("/bookTeacherScheduleSlot", async (req, res) => {
     if (check_bookingResponse?.data && check_bookingResponse?.data?.length > 0) {
       res.send({ error: { message: "This slot already booked someone." } });
     } else {
-      const addOrderDataResponse = await supabase.from("order").insert({ start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id, group_details, booking_type, subscription_teacher_user_id, address, course_id }).select("*").maybeSingle();
+      const addOrderDataResponse = await supabase.from("order").insert({ start_date, end_date, start_time, end_time, student_id, teacher_id, schedule_id, group_details, booking_type, subscription_teacher_user_id, address, course_id, latitude, longitude }).select("*").maybeSingle();
       await addNotificationWhenOrderAdd(teacher_id, student_id);
       res.send(addOrderDataResponse);
     }
