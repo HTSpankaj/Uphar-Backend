@@ -11,8 +11,8 @@ router.use(bodyParser.json());
 const storage = multer.memoryStorage();
 
 const twilio = require('twilio');
-const accountSid = 'AC3900352c18df0b274177df76560abf22'; // Your Account SID from www.twilio.com/console
-const authToken = '18346dda8f1d6a7be797460322cf7c06'; // Your Auth Token from www.twilio.com/console
+const accountSid = 'ACa5bd1708e1dbe79f75e38193d5137205'; // Your Account SID from www.twilio.com/console
+const authToken = 'a2f5ea8fa45c1ec18998f8aa03603191'; // Your Auth Token from www.twilio.com/console
 
 const client = require('twilio')(accountSid, authToken)
 
@@ -58,7 +58,7 @@ router.post("/sendOTP", async (req, res) => {
   // res.send(data);
   try {
     var otp = Math.floor(1000 + Math.random() * 9000);
-    const twilioClientResponse = await client.messages.create({...postData, body:`Dear user, use this One Time Password ${otp} to verify your number from Bizorclass.`, from: "+15618232622"});
+    const twilioClientResponse = await client.messages.create({...postData, body:`Dear user, use this One Time Password ${otp} to verify your number from Bizorclass.`, from: "+14176654025"});
     res.send({ success: true, data: twilioClientResponse, otp });
             
   } catch (error) {
