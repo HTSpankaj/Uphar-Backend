@@ -1,6 +1,7 @@
 var express = require("express");
 var router = express.Router();
 var multer = require("multer");
+var twilioConfig = require("../configs/twilioConfig").config;
 const { createClient } = require("@supabase/supabase-js");
 const supabase = createClient(
   "https://vuozzbzdmjgsltgmxrfo.supabase.co",
@@ -11,11 +12,7 @@ router.use(bodyParser.json());
 const storage = multer.memoryStorage();
 
 const twilio = require('twilio');
-const accountSid = 'ACa5bd1708e1dbe79f75e38193d5137205'; // Your Account SID from www.twilio.com/console
-const authToken = '6f270ec6f93a404a2f0f0e4ae8ff80e4'; // Your Auth Token from www.twilio.com/console
-const twilioFromNumber = "+14176654025";
-
-const client = require('twilio')(accountSid, authToken)
+const client = require('twilio')(twilioConfig.accountSid, twilioConfig.authToken)
 
 router.get("/", function (req, res, next) {
   res.send("respond with a resource from commonData.js");
@@ -59,7 +56,7 @@ router.post("/sendOTP", async (req, res) => {
   // res.send(data);
   try {
     var otp = Math.floor(1000 + Math.random() * 9000);
-    const twilioClientResponse = await client.messages.create({...postData, body:`Dear user, use this One Time Password ${otp} to verify your number from Bizorclass.`, from: twilioFromNumber});
+    const twilioClientResponse = await client.messages.create({...postData, body:`Dear user, use this One Time Password ${otp} to verify your number from Bizorclass.`, from: twilioConfig.twilioFromNumber});
     res.send({ success: true, data: twilioClientResponse, otp });
             
   } catch (error) {
