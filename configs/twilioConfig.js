@@ -6,7 +6,7 @@
 const config = {
   accountSid: 'AC2d571d35958aa442314b835ef23a1d11',
   // authToken: '1a60c2c6e40ed81410fb6411e6cb7c5c',
-  authToken: '90302eef6f5931531ca5a7add4673e86',
+  authToken: '710f4e88ac8acec15ef6e6ba414baa48',
   twilioFromNumber: "+12345162415",
 };
 exports.config = config;
