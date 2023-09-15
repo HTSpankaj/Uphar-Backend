@@ -51,10 +51,10 @@ router.post("/phonepe-pay-api", async (req, res) => {
   const { mobileNumber, amount } = req.body;
 
   let _merchantTransactionId = uuidv4();
-  _merchantTransactionId = _merchantTransactionId?.replaceAll("-", "_") || "";
+  _merchantTransactionId = _merchantTransactionId?.replace(/-/g, "_") || "";
 
   let _merchantUserId = uuidv4();
-  _merchantUserId = _merchantUserId?.replaceAll("-", "_") || "";
+  _merchantUserId = _merchantUserId?.replace(/-/g, "_") || "";
 
   let postData = {
     merchantId: phonepeConfig.merchantId,
