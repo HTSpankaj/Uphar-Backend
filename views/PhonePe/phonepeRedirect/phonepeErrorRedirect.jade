@@ -1,0 +1,16 @@
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet' href='/stylesheets/phonepeErrorRedirect.css')
+    meta(charset='utf-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1')
+  body
+    div(style='display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: space-evenly; padding: 10px;')
+      img(style='width: 100%; object-fit: cover;' src='/images/Screenshot 2023-09-15 154806.png' alt='')
+      div
+        h2(style='color: #ff0000ab;') Failure to pay
+      div
+        h3(style='color: #00000073; text-align: center;') Order amount: ₹#{amount}
+        h3(style='color: #00000073; text-align: center;')
+        h3(style='color: #00000073; text-align: center;') Payment failed, please pay again.

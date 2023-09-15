@@ -8,6 +8,7 @@ var commonDataRouter = require("./ROUTE/commonData");
 var paymentRouter = require("./ROUTE/payment").router;
 var notificationRouter = require("./ROUTE/notification").router;
 var orderRouter = require("./ROUTE/order");
+var path = require('path');
 
 const { createClient } = require("@supabase/supabase-js");
 const { notEqual } = require("assert"); // why this
@@ -33,9 +34,13 @@ app.use("/payment", paymentRouter);
 app.use("/notification", notificationRouter);
 app.use("/order", orderRouter);
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true })); //  form data
-//2
-// app.use(upload.any());
+app.use(bodyParser.urlencoded({ extended: true })); 
+
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'jade');
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.post("/registrationAdmin", async (req, res) => {
   const post = req.body;
   console.log(req.body);
