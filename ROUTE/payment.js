@@ -127,7 +127,8 @@ router.post("/phonepe-redirectUrl-api", async (req, res) => {
 
   console.log(postBody);
 
-  let X_VERIFY_string = SHA256(`pg/v1/status/${postBody?.merchantId}/${postBody?.transactionId}` + phonepeConfig.saltKey) + "###" + phonepeConfig.saltKey;
+  let X_VERIFY_string = SHA256(`pg/v1/status/${postBody?.merchantId}/${postBody?.transactionId}` + phonepeConfig.saltKey) + "###" + phonepeConfig.saltIndex;
+  
   let headers = {
     accept: 'application/json',
     'Content-Type': 'application/json',
@@ -135,7 +136,6 @@ router.post("/phonepe-redirectUrl-api", async (req, res) => {
     'X-MERCHANT-ID': postBody?.merchantId
   }
   try {
-    // const payApiResponse = await axios.post(`https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/status/${postBody?.merchantId}/${postBody?.transactionId}`, { request: jsonToBase64Payload }, { headers })
     const payApiResponse = await axios.get(`https://api.phonepe.com/apis/hermes/pg/v1/status/${postBody?.merchantId}/${postBody?.transactionId}`, { headers })
     
     console.log("payApiResponse => ", payApiResponse.data);
