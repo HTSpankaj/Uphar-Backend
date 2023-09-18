@@ -159,8 +159,8 @@ router.post("/phonepe-redirectUrl-api", async (req, res) => {
 //* Instamojo
 router.post("/create-instamojo-payment-request", async (req, res) => {
 
-  let { amount, studentName, email, phoneNumber } = req.body;
-  amount = 10;
+  const { amount, studentName, email, phoneNumber } = req.body;
+  // amount = 10;
 
   if (amount && studentName && email && phoneNumber) {
     const encodedParams = new URLSearchParams();
