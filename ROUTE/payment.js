@@ -12,6 +12,7 @@ router.use(bodyParser.urlencoded({ extended: true }));
 
 const razorpayConfig = require('../configs/razorpayConfig').config;
 const phonepeConfig = require('../configs/phonepeConfig').config;
+const instamojoConfig = require('../configs/instamojoConfig').config;
 const { v4: uuidv4 } = require('uuid');
 var SHA256 = require("crypto-js/sha256");
 const { default: axios } = require("axios");
@@ -46,78 +47,82 @@ router.post("/razorpayCreateOrderId", async (req, res) => {
 });
 
 router.post("/phonepe-pay-api", async (req, res) => {
-// router.get("/phonepe-pay-api", async (req, res) => {
+  // router.get("/phonepe-pay-api", async (req, res) => {
 
-  const { mobileNumber, amount } = req.body;
+  const { teacher_id, student_id, start_date, end_date, start_time, end_time, schedule_id, booking_type, group_details, address, course_id, latitude, longitude, subscription_plan_id, total_price } = req.body;
+  // teacher_id
+  // student_id
+  // start_date
+  // end_date
+  // start_time
+  // end_time
+  // schedule_id
+  // booking_type
+  // group_details
+  // address
+  // course_id
+  // latitude
+  // longitude
+  // subscription_plan_id
+  // total_price
+  //! cancel_status, cancel_reason, razorpay_refund_id, refund_status,
+  //! pay_api_postbody, pay_api_response
 
-  let _merchantTransactionId = uuidv4();
-  _merchantTransactionId = _merchantTransactionId?.replace(/-/g, "_") || "";
+  if (teacher_id && student_id && start_date && end_date && start_time && end_time && schedule_id && booking_type && group_details && address && course_id && latitude && longitude && subscription_plan_id && total_price) {
 
-  let _merchantUserId = uuidv4();
-  _merchantUserId = _merchantUserId?.replace(/-/g, "_") || "";
+    try {
+      const transactionInsertResponse = await supabase.from("transaction").insert({ teacher_id, student_id, start_date, end_date, start_time, end_time, schedule_id, booking_type, group_details, address, course_id, latitude, longitude, subscription_plan_id, total_price }).select('*').maybeSingle();
+      if (transactionInsertResponse?.data) {
 
-  let postData = {
-    merchantId: phonepeConfig.merchantId,
-    merchantTransactionId: _merchantTransactionId,
-    amount: (amount || 1) * 100,
-    merchantUserId: phonepeConfig.merchantUserId,
-    // redirectUrl: "http://localhost:8080/payment/phonepe-redirectUrl-api",
-    redirectUrl: `${req.protocol}://${req.get('host')}/payment/phonepe-redirectUrl-api`,
-    redirectMode: "POST",
-    // callbackUrl: "http://localhost:8080/payment/phonepe-callbackUrl-api",
-    callbackUrl: `${req.protocol}://${req.get('host')}/payment/phonepe-callbackUrl-api`,
-    mobileNumber: mobileNumber,
-    paymentInstrument: {
-      "type": "PAY_PAGE"
-    },
-    param1: "Pata"
+        let postData = {
+          merchantId: phonepeConfig.merchantId,
+          merchantTransactionId: transactionInsertResponse.data?.transaction_id,
+          amount: transactionInsertResponse?.data?.total_price * 100,
+          merchantUserId: phonepeConfig.merchantUserId,
+          redirectUrl: `${req.protocol}://${req.get('host')}/payment/phonepe-redirectUrl-api`,
+          redirectMode: "POST",
+          callbackUrl: `${req.protocol}://${req.get('host')}/payment/phonepe-callbackUrl-api`,
+          paymentInstrument: {
+            "type": "PAY_PAGE"
+          }
+        }
+        const jsonToBase64Payload = jsonToBase64(postData);
+        let X_VERIFY_string = SHA256(jsonToBase64Payload + "/pg/v1/pay" + phonepeConfig.saltKey) + "###" + phonepeConfig.saltIndex;
+
+        let headers = {
+          accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-VERIFY': X_VERIFY_string
+        }
+
+        try {
+          const payApiResponse = await axios.post(`${phonepeConfig.phonePeBaseURL}/pg/v1/pay`, { request: jsonToBase64Payload }, { headers })
+          // console.log("payApiResponse => ", payApiResponse);
+          const transactionUpdateResponse = await supabase.from("transaction").update({ pay_api_postbody: postData, pay_api_response: payApiResponse?.data }).eq("transaction_id", transactionInsertResponse.data?.transaction_id)
+
+          res.status(200).json({ success: true, response: payApiResponse?.data })
+        } catch (error) {
+          console.error("error => ", error?.response?.data);
+          console.error("error status => ", error?.response?.status);
+          res.status(500).json({ success: false, response: error?.response?.data });
+        }
+      } else {
+        throw transactionInsertResponse?.error
+      }
+    } catch (error) {
+      console.log("error => ", error);
+      res.status(500).json({ success: false, error });
+    }
+  } else {
+    res.status(500).json({ success: false, error: "Invalid post body." });
   }
-  const jsonToBase64Payload = jsonToBase64(postData);
-  let X_VERIFY_string = SHA256(jsonToBase64Payload + "/pg/v1/pay" + phonepeConfig.saltKey) + "###" + phonepeConfig.saltIndex;
-
-
-  // let headers = new HttpHeaders();
-  // headers = headers.set('accept', 'application/json').set('Content-Type', 'application/json').set("X-VERIFY", X_VERIFY_string);
-  let headers = {
-    accept: 'application/json',
-    'Content-Type': 'application/json',
-    'X-VERIFY': X_VERIFY_string
-  }
-
-  // console.log("postData => ", postData);
-  // console.log("jsonToBase64Payload => ", jsonToBase64Payload);
-  // console.log("X_VERIFY_string => ", X_VERIFY_string);
-
-  // return this.http.post('https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay', { request: jsonToBase64Payload }, { headers: headers }).toPromise();
-
-  try {
-    // const payApiResponse = await axios.post("https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay", { request: jsonToBase64Payload }, { headers })
-    const payApiResponse = await axios.post("https://api.phonepe.com/apis/hermes/pg/v1/pay", { request: jsonToBase64Payload }, { headers })
-    // console.log("payApiResponse => ", payApiResponse);
-    res.status(200).json({success: true, response: payApiResponse?.data})
-  } catch (error) {
-    console.error("error => ", error?.response?.data);
-    console.error("error status => ", error?.response?.status);
-    res.status(500).json({success: false, response: error?.response?.data});
-  }
-
-  // sdk.payApi1(
-  //   { request: jsonToBase64Payload },
-  //   { 'x-verify': X_VERIFY_string }
-  // ).then(({ data }) => {
-  //   console.log(data);
-  //   res.status(200).json({success: true, response: payApiResponse?.data})
-  // }).catch(err => {
-  //   console.error(err);
-  //   res.status(500).json({success: false, response: err});
-  // });
 });
 
 router.post("/phonepe-callbackUrl-api", async (req, res) => {
   const postBody = req.body;
 
   console.log("callbackUrl postBody", postBody);
-  res.status(500).json({success: false, postBody});
+  res.status(500).json({ success: false, postBody });
 })
 
 
@@ -127,8 +132,8 @@ router.post("/phonepe-redirectUrl-api", async (req, res) => {
 
   console.log(postBody);
 
-  let X_VERIFY_string = SHA256(`pg/v1/status/${postBody?.merchantId}/${postBody?.transactionId}` + phonepeConfig.saltKey) + "###" + phonepeConfig.saltIndex;
-  
+  let X_VERIFY_string = SHA256(`pg/v1/status/${postBody?.merchantId}/${postBody?.transactionId}` + phonepeConfig.saltKey).toString() + "###" + phonepeConfig.saltIndex;
+
   let headers = {
     accept: 'application/json',
     'Content-Type': 'application/json',
@@ -136,18 +141,85 @@ router.post("/phonepe-redirectUrl-api", async (req, res) => {
     'X-MERCHANT-ID': postBody?.merchantId
   }
   try {
-    const payApiResponse = await axios.get(`https://api.phonepe.com/apis/hermes/pg/v1/status/${postBody?.merchantId}/${postBody?.transactionId}`, { headers })
-    
+    const payApiResponse = await axios.get(`${phonepeConfig.phonePeBaseURL}/pg/v1/status/${postBody?.merchantId}/${postBody?.transactionId}`, { headers })
+
     console.log("payApiResponse => ", payApiResponse.data);
-    res.status(200).json({success: true, response: payApiResponse?.data})
+    // res.status(200).json({success: true, response: payApiResponse?.data})
+    res.render('PhonePe/phonepeRedirect/phonepeSuccessRedirect', { title: 'Bizorclass Payment Success', amount: (postBody?.amount / 100) || 0, merchantTransactionId: payApiResponse.data?.data?.merchantTransactionId });
   } catch (error) {
     // console.error("error => ", error);
     console.error("error => ", error?.response?.data);
     console.error("error status => ", error?.response?.status);
-    
-    res.render('PhonePe/phonepeRedirect/phonepeErrorRedirect', { title: 'Bizorclass Payment Failure' , amount: (postBody?.amount / 100) || 0});
+
+    res.render('PhonePe/phonepeRedirect/phonepeErrorRedirect', { title: 'Bizorclass Payment Failure', amount: (postBody?.amount / 100) || 0 });
     // res.status(500).json({success: false, error: error?.response?.data});
   }
+})
+
+//* Instamojo
+router.post("/create-instamojo-payment-request", async (req, res) => {
+
+  const { amount, studentName, email, phoneNumber } = req.body;
+
+  if (amount && studentName && email && phoneNumber) {
+    const encodedParams = new URLSearchParams();
+    encodedParams.set('grant_type', 'client_credentials');
+    encodedParams.set('client_id', instamojoConfig.clientId);
+    encodedParams.set('client_secret', instamojoConfig.clientSecret);
+
+    console.log("encodedParams", encodedParams);
+
+    const options = {
+      method: 'POST',
+      url: `${instamojoConfig.instaMojoBaseURL}/oauth2/token/`,
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/x-www-form-urlencoded'
+      },
+      data: encodedParams,
+    };
+
+    axios.request(options).then((generateAccessTokenResponse) => {
+      console.log("generateAccessTokenResponse => ", generateAccessTokenResponse);
+      if (generateAccessTokenResponse.data?.access_token) {
+        const encodedParams = new URLSearchParams();
+        encodedParams.set('allow_repeated_payments', 'false');
+        encodedParams.set('send_email', 'false');
+        encodedParams.set('purpose', 'Book Schedule');
+        encodedParams.set('amount', amount);
+        encodedParams.set('buyer_name', studentName);
+        encodedParams.set('email', email);
+        encodedParams.set('phone', phoneNumber);
+
+        const options = {
+          method: 'POST',
+          url: `${instamojoConfig.instaMojoBaseURL}/v2/payment_requests/`,
+          headers: {
+            accept: 'application/json',
+            Authorization: `bearer ${generateAccessTokenResponse.data?.access_token}`,
+            'content-type': 'application/x-www-form-urlencoded'
+          },
+          data: encodedParams,
+        };
+        
+        axios.request(options).then((createPaymentRequest) => {
+          console.log(createPaymentRequest.data);
+          res.status(200).json({ success: true, data: createPaymentRequest.data });
+        }).catch((createPaymentError) => {
+          console.error(createPaymentError?.response?.data);
+          res.status(500).json({ success: false, error: createPaymentError?.response?.data });
+        });
+      } else {
+        res.status(500).json({ success: false, error: "something went wrong please try again." });
+      }
+    }).catch((error) => {
+      console.error(error?.response?.data);
+      res.status(500).json({ success: false, error: error?.response?.data });
+    });
+  } else {
+    res.status(500).json({ success: false, error: "Invalid post body." });
+  }
+
 })
 
 function refundRequest(payment_id, amount) {
@@ -160,7 +232,6 @@ function refundRequest(payment_id, amount) {
       reject({ ...error, message: error?.error?.description });
     })
   })
-
 }
 
 module.exports = { router, refundRequest };

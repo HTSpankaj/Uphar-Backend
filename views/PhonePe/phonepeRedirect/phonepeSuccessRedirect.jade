@@ -1,0 +1,16 @@
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet' href='/stylesheets/phonepeErrorRedirect.css')
+    meta(charset='utf-8')
+    meta(name='viewport' content='width=device-width, initial-scale=1')
+  body
+    div(style='display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: space-evenly; padding: 10px;')
+      img(style='width: 100%; object-fit: cover;' src='/images/Screenshot 2023-09-15 201308.png' alt='')
+      div
+        h2(style='color: #3de53d;') Successful Payment
+      div
+        h4(style='color: #00000073; text-align: center;') Transaction ID: ₹#{merchantTransactionId}
+        h4(style='color: #00000073; text-align: center;')
+        h4(style='color: #00000073; text-align: center;') Thank you for booking.
